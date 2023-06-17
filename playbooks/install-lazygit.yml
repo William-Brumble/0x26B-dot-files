@@ -1,0 +1,16 @@
+---
+- name: Set lazygit environment variable
+  ansible.builtin.command: LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+
+- name: Download lazygit
+  ansible.builtin.command: curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+
+- name: Extract lazygit
+  ansible.builtin.command: tar xf lazygit.tar.gz lazygit
+
+- name: Install lazygit
+  become: yes
+  ansible.builtin.command: sudo install lazygit /usr/bin
+
+- name: Cleanup install files
+  ansible.builtin.command: rm lazygit.tar.gz

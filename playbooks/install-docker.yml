@@ -1,0 +1,118 @@
+---
+- name: Update packages
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Upgrade packages
+  become: yes
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+
+- name: Uninstall old docker.io
+  become: yes
+  ansible.builtin.apt:
+    name:  docker.io
+    state: absent
+
+- name: Uninstall old docker-doc
+  become: yes
+  ansible.builtin.apt:
+    name: docker-doc
+    state: absent
+
+- name: Uninstall old docker-compose
+  become: yes
+  ansible.builtin.apt:
+    name: docker-compose
+    state: absent
+
+- name: Uninstall old podman-docker
+  become: yes
+  ansible.builtin.apt:
+    name: podman-docker
+    state: absent
+
+- name: Uninstall old containerd
+  become: yes
+  ansible.builtin.apt:
+    name: containerd
+    state: absent
+
+- name: Install docker dependency ca-certificates
+  become: yes
+  ansible.builtin.apt:
+    name: ca-certificates
+
+- name: Install docker dependency curl
+  become: yes
+  ansible.builtin.apt:
+    name: curl
+
+- name: Install docker dependency gnupg
+  become: yes
+  ansible.builtin.apt:
+    name: gnupg
+
+- name: Create keyrings directory
+  become: yes
+  file:
+    path: /etc/apt/keyrings
+    mode: '0755'
+    state: directory
+
+- name: Add docker GPG key
+  become: yes
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present 
+
+- name: Add docker repository
+  become: yes
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu jammy stable
+    state: present
+
+- name: Update packages
+  become: yes
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install docker-ce
+  become: yes
+  ansible.builtin.apt:
+    name: docker-ce
+
+- name: Install docker-ce-cli
+  become: yes
+  ansible.builtin.apt:
+    name: docker-ce-cli
+
+- name: Install containerd.io
+  become: yes
+  ansible.builtin.apt:
+    name: containerd.io
+
+- name: Install docker-buildx-plugin
+  become: yes
+  ansible.builtin.apt:
+    name: docker-buildx-plugin
+
+- name: Install docker-compose-plugin
+  become: yes
+  ansible.builtin.apt:
+    name: docker-compose-plugin
+
+- name: Create docker group
+  become: yes
+  ansible.builtin.group:
+    name: docker
+    state: present
+
+- name: "Add {{ansible_user}} user to the docker group"
+  become: yes
+  user:
+    name: "{{ansible_user}}"
+    groups: docker
+    append: yes

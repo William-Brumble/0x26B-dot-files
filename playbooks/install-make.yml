@@ -1,0 +1,25 @@
+---
+- name: Using apt uninstall make
+  become: yes
+  ansible.builtin.apt:
+    name: make
+    state: absent
+
+- name: Install make package
+  become: yes
+  ansible.builtin.apt:
+    name: make
+    update_cache: yes
+      
+- name: Install build-essential
+  become: yes
+  ansible.builtin.apt:
+    name: build-essential
+    update_cache: yes
+
+- name: Install cmake
+  become: yes
+  ansible.builtin.apt:
+    name: cmake
+    update_cache: yes
+

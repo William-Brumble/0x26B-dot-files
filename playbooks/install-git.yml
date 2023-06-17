@@ -1,0 +1,17 @@
+---
+- name: Using apt uninstall git 
+  become: yes
+  ansible.builtin.apt:
+    name: git
+    state: absent
+
+- name: Add git stable repository from PPA and install its signing key
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: 'ppa:git-core/ppa'
+
+- name: Update repositories cache and install git package
+  become: yes
+  ansible.builtin.apt:
+    name: git
+    update_cache: yes

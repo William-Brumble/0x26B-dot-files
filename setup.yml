@@ -1,0 +1,56 @@
+---
+- name: Setup fresh computer
+  hosts: localhost
+  connection: local
+
+  environment:
+    LV_BRANCH: release-1.3/neovim-0.9
+
+  vars_prompt:
+    - name: ansible_user
+      prompt: '> What is the username of this user?'
+      private: false
+    - name: ansible_become_password 
+      prompt: '> What is the become password?'
+      private: true
+    - name: NODEJS_VERSION
+      prompt: '> What is the nodejs version that you want to install?'
+      private: false
+
+  tasks:
+    - name: Include install neovim
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-neovim.yml
+
+    - name: Include install git
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-git.yml
+
+    - name: Include install make and build essentials
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-make.yml
+
+    - name: Include install nodejs
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-node.yml
+
+    - name: Include install cargo
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-cargo.yml
+
+    - name: Include install lunarvim
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-lunarvim.yml
+
+    - name: Include configure lunarvim
+      ansible.builtin.include_tasks:
+        file: ./playbooks/configure-lunarvim.yml
+
+    - name: Include install docker
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-docker.yml
+
+    - name: Include install microk8s
+      ansible.builtin.include_tasks:
+        file: ./playbooks/install-microk8s.yml
+

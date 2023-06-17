@@ -1,0 +1,38 @@
+---
+- name: Install microk8s
+  become: yes
+  snap:
+    name: microk8s
+    state: present
+    classic: yes
+
+- name: Add "{{ansible_user}}" user to microk8s group
+  become: yes
+  user:
+    name: "{{ansible_user}}"
+    groups: microk8s
+    append: yes
+
+- name: Create .kube directory in home folder
+  file:
+    path: "/home/{{ansible_user}}/.kube"
+    owner: "{{ansible_user}}"
+    mode: '0755'
+    state: directory
+
+- name: Install microk8s dns addon
+  become: yes
+  command: sudo microk8s enable dns
+
+- name: Install microk8s ingress addon
+  become: yes
+  command: sudo microk8s enable ingress
+
+- name: Install microk8s hostpath-storage addon
+  become: yes
+  command: sudo microk8s enable hostpath-storage
+
+- name: Install microk8s registry addon
+  become: yes
+  command: sudo microk8s enable registry
+

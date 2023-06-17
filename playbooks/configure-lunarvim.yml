@@ -1,0 +1,49 @@
+---
+- name: Syntax yaml
+  ansible.builtin.command: lvim -es -c 'TSInstall yaml' -c 'qall'
+
+- name: Syntax javascript
+  ansible.builtin.command: lvim -es -c 'TSInstall javascript' -c 'qall'
+
+- name: Syntax json
+  ansible.builtin.command: lvim -es -c 'TSInstall json' -c 'qall'
+
+- name: Syntax python
+  ansible.builtin.command: lvim -es -c 'TSInstall python' -c 'qall'
+
+- name: Syntax c
+  ansible.builtin.command: lvim -es -c 'TSInstall c' -c 'qall'
+
+- name: Syntax cpp
+  ansible.builtin.command: lvim -es -c 'TSInstall cpp' -c 'qall'
+
+- name: Language server yaml
+  ansible.builtin.command: lvim -es -c 'LspInstall yaml' -c 'qall'
+
+- name: Language server typescript
+  ansible.builtin.command: lvim -es -c 'LspInstall tsserver' -c 'qall'
+
+- name: Language server tailwindcss
+  ansible.builtin.command: lvim -es -c 'LspInstall tailwindcss' -c 'qall'
+
+- name: Language servesilentr json
+  ansible.builtin.command: lvim -es -c 'LspInstall rome' -c 'qall'
+
+- name: Language server python
+  ansible.builtin.command: lvim -es -c 'LspInstall pyright' -c 'qall'
+
+- name: Language server c and cpp
+  ansible.builtin.command: lvim -es -c 'LspInstall clangd' -c 'qall'
+
+- name: Linter yaml
+  ansible.builtin.command: lvim -es -c 'MasonInstall yamllint' -c 'qall'
+
+- name: Linter javascript
+  ansible.builtin.command: lvim -es -c 'MasonInstall eslint_d' -c 'qall'
+
+- name: Linter python
+  ansible.builtin.command: lvim -es -c 'MasonInstall pylint' -c 'qall'
+
+- name: Linter c and cpp
+  ansible.builtin.command: lvim -es -c 'MasonInstall clang-format' -c 'qall'
+

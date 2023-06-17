@@ -1,0 +1,19 @@
+---
+- name: Using apt uninstall neovim
+  become: yes
+  ansible.builtin.apt:
+    name: neovim
+    state: absent
+
+- name: Remove neovim app image from /usr/bin
+  become: yes
+  ansible.builtin.file:
+    path: /usr/bin/nvim
+    state: absent
+
+- name: Download neovim app image and save to /usr/bin/nvim
+  become: yes
+  ansible.builtin.get_url:
+    url: https://github.com/neovim/neovim/releases/latest/download/nvim.appimage
+    dest: /usr/bin/nvim
+    mode: '0755'
