@@ -16,17 +16,17 @@ rm get-pip.py
 echo '> Installing ansible'
 python3 -m pip install --user ansible
 
-# Make sure that local bin is in ~/.profile:
-echo '> Appending ~/.local/bin to ~/.profile for path update:'
+# Make sure that local bin is in ~/.bashrc:
+echo '> Appending ~/.local/bin to ~/.bashrc for path update:'
 echo 'PATH="${PATH:+${PATH}:}~/.local/bin"' >> ~/.profile
 
-# Make sure that cargo bin path is in ~/.profile:
-echo '> Appending ~/.cargo/bin to ~/.profile for path update:'
+# Make sure that cargo bin path is in ~/.bashrc:
+echo '> Appending ~/.cargo/bin to ~/.bashrc for path update:'
 echo 'PATH="${PATH:+${PATH}:}~/.cargo/bin"' >> ~/.profile
 
-# Source the new .profile:
-echo '> Sourcing ~/.profile'
-source ~/.profile
+# Source the new .bashrc:
+echo '> Sourcing ~/.bashrc'
+source ~/.bashrc
 
 # Run the setup playbook
 echo '> Running the ansible install playbook:'
