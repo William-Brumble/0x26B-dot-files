@@ -72,6 +72,7 @@
         registry_auth: "htpasswd"
         registry_auth_htpasswd_realm: "Registry Realm"
         registry_auth_htpasswd_path: "/config/docker-registry-htpasswd-sec/htpasswd"
+        registry_storage_filesystem_rootdirectory: /app/registry
         # Traefik performs TLS termination, so commenting
         # this out to allow http traffic from Traefik to
         # backend service
@@ -215,6 +216,11 @@
                       configMapKeyRef:
                         name: docker-registry-cm
                         key: registry_auth_htpasswd_path
+                  - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-cm
+                        key: registry_storage_filesystem_rootdirectory
                   # Traefik performs TLS termination, so commenting
                   # this out to allow http traffic from Traefik to
                   # backend service
