@@ -1,0 +1,52 @@
+---
+- name: Create a private registry inside k3s cluster using docker registry
+  hosts: localhost
+  connection: local
+
+  vars_prompt:
+    - name: registry_username
+      prompt: '> Enter the username; for external access to the private registry'
+      private: false
+    - name: registry_password
+      prompt: '> Enter the password; for external access to the private registry'
+      private: true
+    - name: certificate_country
+      prompt: '> Enter the certs country; e.g. US'
+      private: false
+    - name: certificate_state
+      prompt: '> Enter the certs state; e.g. Texas'
+      private: false
+    - name: certificate_city
+      prompt: '> Enter the certs city; e.g. Houston'
+      private: false
+    - name: certificate_company
+      prompt: '> Enter the certs company; e.g. Development Company'
+      private: false
+    - name: certificate_common_name
+      prompt: '> Enter the certs common name; e.g. *.development.com'
+      private: false
+    - name: certificate_dns
+      prompt: '> Enter the certs subject alt name DNS; e.g. development.com'
+      private: false
+    - name: certificate_ip
+      prompt: '> Enter the certs subject alt name IP; e.g. 10.0.0.221'
+      private: false
+
+  tasks:
+    # This sets up the certificate that Traefik will serve to visitors of the ingress
+    - name: Generate a self signed certificate for TLS connections
+      ansible.builtin.include_tasks:
+        file: ./playbooks/generate-self-signed-certificate.yaml
+
+    # Traefik performs TLS termination, so internal traffic after Trafik will be http
+    # this is to setup the self signed certificate at the ingress
+    # to allow https traffic up to the cluster's ingress
+    # https://blog.kronis.dev/tutorials/how-to-add-a-wildcard-ssl-tls-certificate-for-your-k3s-cluster
+    - name: Setup Traefik's default certificate
+      ansible.builtin.include_tasks:
+        file: ./playbooks/traefik-tls-cert-setup.yaml
+
+    # This setups up a private http docker registry
+    - name: Provision private docker registry
+      ansible.builtin.include_tasks:
+        file: ./playbooks/docker-private-registry.yaml

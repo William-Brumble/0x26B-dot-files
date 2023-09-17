@@ -1,0 +1,60 @@
+---
+- name: Generate cert private key
+  no_log: true
+  community.crypto.openssl_privatekey:
+    return_content: true
+    force: true
+    regenerate: "always"
+    path: /tmp/private_key.pem
+    type: RSA
+    size: 2048
+  register: private_key_output
+
+- name: Remove the cert private key file
+  ansible.builtin.file:
+    path: /tmp/private_key.pem
+    state: absent
+
+- name: Generate cert certificate signing request
+  no_log: true
+  community.crypto.openssl_csr:
+    return_content: true
+    force: true
+    path: /tmp/csr.pem
+    privatekey_content: "{{ private_key_output.privatekey }}"
+    subject:
+      C: "{{ certificate_country }}"
+      ST: "{{ certificate_state }}"
+      L: "{{ certificate_city }}"
+      O: "{{ certificate_company}}"
+      CN: "{{ certificate_common_name}}"
+    subject_alt_name: "DNS:{{ certificate_dns }},DNS:www.{{ certificate_dns }},DNS:registry.{{ certificate_dns }},IP:{{ certificate_ip }}"
+  register: csr_output
+
+- name: Remove the cert csr file
+  ansible.builtin.file:
+    path: /tmp/csr.pem
+    state: absent
+
+- name: Generate cert self-signed certificate
+  no_log: true
+  community.crypto.x509_certificate:
+    return_content: true
+    force: true
+    path: /tmp/certificate.pem
+    privatekey_content: "{{ private_key_output.privatekey }}"
+    csr_content: "{{ csr_output.csr }}"
+    provider: selfsigned
+    entrust_not_after: "+364d"
+  register: certificate_output
+
+- name: Remove the cert certificate file
+  ansible.builtin.file:
+    path: /tmp/certificate.pem
+    state: absent
+
+- name: Store certificate data in ansible variables
+  ansible.builtin.set_fact:
+    private_key: "{{ private_key_output.privatekey }}"
+    csr: "{{ csr_output.csr }}"
+    certificate: "{{ certificate_output.certificate }}"

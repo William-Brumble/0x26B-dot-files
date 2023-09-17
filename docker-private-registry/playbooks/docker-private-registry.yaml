@@ -1,0 +1,231 @@
+---
+- name: Create the namespace object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: docker-registry-ns
+        labels:
+          name: docker-registry-ns
+
+- name: Create htpasswd entry while also hashing the password using bcrypt
+  ansible.builtin.set_fact:
+    htpasswd_entry: "{{ registry_username }}:{{ registry_password | password_hash('bcrypt') }}"
+  no_log: true
+
+- name: Encode htpasswd entry contents to base64
+  ansible.builtin.set_fact:
+    htpasswd_base64: "{{ htpasswd_entry | b64encode }}"
+
+- name: Create the httpasswd secret object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: docker-registry-htpasswd-sec
+        namespace: docker-registry-ns
+      data:
+        htpasswd: "{{ htpasswd_base64 }}"
+
+# Traefik performs TLS termination, so commenting
+# this out to allow http traffic from Traefik to
+# backend service
+#
+# - name: Create the cert secret object from an inline definition
+#   kubernetes.core.k8s:
+#     state: present
+#     definition:
+#       apiVersion: v1
+#       kind: Secret
+#       metadata:
+#         name: docker-registry-cert-sec
+#         namespace: docker-registry-ns
+#       type: kubernetes.io/tls
+#       data:
+#         # certificate fact/variable is defined in generate-self-signed-certificate.yaml
+#         # task file
+#         tls.crt: "{{ certificate | b64encode }}"
+#         # private_key fact/variable is defined in generate-self-signed-certificate.yaml
+#         # task file
+#         tls.key: "{{ private_key | b64encode }}"
+
+- name: Create the configmap object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: docker-registry-cm
+        namespace: docker-registry-ns
+      data:
+        # Traefik performs TLS termination, so commenting
+        # this out to allow http traffic from Traefik to
+        # backend service
+        #
+        # registry_http_addr: "0.0.0.0:443"
+        registry_auth: "htpasswd"
+        registry_auth_htpasswd_realm: "Registry Realm"
+        registry_auth_htpasswd_path: "/config/docker-registry-htpasswd-sec/htpasswd"
+        # Traefik performs TLS termination, so commenting
+        # this out to allow http traffic from Traefik to
+        # backend service
+        #
+        # registry_http_tls_certificate: "/config/docker-registry-cert-sec/tls.crt"
+        # registry_http_tls_key: "/config/docker-registry-cert-sec/tls.key"
+
+- name: Create the clusterip service object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: docker-registry-srv-clusterip
+        namespace: docker-registry-ns
+      spec:
+        selector:
+          app: docker-registry
+        type: ClusterIP
+        ports:
+          - protocol: TCP
+            port: 80
+            targetPort: 5000
+
+- name: Create the ingress object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: docker-registry-ing
+        namespace: docker-registry-ns
+        annotations:
+      spec:
+        rules:
+          - host: "registry.development.com"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: docker-registry-srv-clusterip
+                      port:
+                        number: 80
+
+- name: Create the persistent volume claim object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: docker-registry-pvc
+        namespace: docker-registry-ns
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
+
+- name: Create the deployment object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: docker-registry-dep
+        namespace: docker-registry-ns
+        labels:
+          app: docker-registry
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: docker-registry
+        template:
+          metadata:
+            labels:
+              app: docker-registry
+          spec:
+            volumes:
+              - name: registry-pvc-storage
+                persistentVolumeClaim:
+                  claimName: docker-registry-pvc
+              - name: docker-registry-htpasswd-sec
+                secret:
+                  secretName: docker-registry-htpasswd-sec
+              # Traefik performs TLS termination, so commenting
+              # this out to allow http traffic from Traefik to
+              # backend service
+              #
+              # - name: docker-registry-cert-sec
+              #   secret:
+              #     secretName: docker-registry-cert-sec
+            containers:
+              - name: docker-registry
+                image: registry
+                ports:
+                  - containerPort: 5000
+                volumeMounts:
+                  - name: registry-pvc-storage
+                    mountPath: /app/registry
+                  - name: docker-registry-htpasswd-sec
+                    readOnly: true
+                    mountPath: /config/docker-registry-htpasswd-sec/
+                  # Traefik performs TLS termination, so commenting
+                  # this out to allow http traffic from Traefik to
+                  # backend service
+                  #
+                  # - name: docker-registry-cert-sec
+                  #   readOnly: true
+                  #   mountPath: /config/docker-registry-cert-sec/
+                env:
+                  # Traefik performs TLS termination, so commenting
+                  # this out to allow http traffic from Traefik to
+                  # backend service
+                  #
+                  # - name: REGISTRY_HTTP_ADDR
+                  #   valueFrom:
+                  #     configMapKeyRef:
+                  #       name: docker-registry-cm
+                  #       key: registry_http_addr
+                  - name: REGISTRY_AUTH
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-cm
+                        key: registry_auth
+                  - name: REGISTRY_AUTH_HTPASSWD_REALM
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-cm
+                        key: registry_auth_htpasswd_realm
+                  - name: REGISTRY_AUTH_HTPASSWD_PATH
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-cm
+                        key: registry_auth_htpasswd_path
+                  # Traefik performs TLS termination, so commenting
+                  # this out to allow http traffic from Traefik to
+                  # backend service
+                  #
+                  # - name: REGISTRY_HTTP_TLS_CERTIFICATE
+                  #   valueFrom:
+                  #     configMapKeyRef:
+                  #       name: docker-registry-cm
+                  #       key: registry_http_tls_certificate
+                  # - name: REGISTRY_HTTP_TLS_KEY
+                  #   valueFrom:
+                  #     configMapKeyRef:
+                  #       name: docker-registry-cm
+                  #       key: registry_http_tls_key

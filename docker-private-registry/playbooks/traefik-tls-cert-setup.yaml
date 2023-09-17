@@ -1,0 +1,58 @@
+---
+# https://blog.kronis.dev/tutorials/how-to-add-a-wildcard-ssl-tls-certificate-for-your-k3s-cluster
+
+# This tells Traefik that I want to provide a default self signed certificate
+- name: Create the configmap object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: traefik-cm
+        namespace: kube-system
+        labels:
+          name: traefik-cm
+      data:
+        traefik-config.yaml: |
+          # https://doc.traefik.io/traefik/https/tls/
+          tls:
+            stores:
+              default:
+                defaultCertificate:
+                  certFile: '/certs/tls.crt'
+                  keyFile: '/certs/tls.key'
+
+# This stores our self signed certificate in a secret visible to Traefik
+- name: Create the secret object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: traefik-tls-sec
+        namespace: kube-system
+      type: kubernetes.io/tls
+      data:
+        # certificate fact/variable is defined in generate-self-signed-certificate.yaml
+        # task file
+        tls.crt: "{{ certificate | b64encode }}"
+        # private_key fact/variable is defined in generate-self-signed-certificate.yaml
+        # task file
+        tls.key: "{{ private_key | b64encode }}"
+
+# This tells Traefik to set its default certificate to our generated self signed certificate
+# https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/#kind-tlsstore
+- name: Create the TLSSTore object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: traefik.containo.us/v1alpha1
+      kind: TLSStore
+      metadata:
+        name: default
+        namespace: kube-system
+      spec:
+        defaultCertificate:
+          secretName: traefik-tls-sec
