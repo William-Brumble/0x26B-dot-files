@@ -1,0 +1,9 @@
+---
+- name: Setup docker-registry-ui
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Setup docker registry ui
+      ansible.builtin.include_tasks:
+        file: ./playbooks/docker-registry-ui.yaml

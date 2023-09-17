@@ -1,0 +1,145 @@
+---
+- name: Create the configmap object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: docker-registry-ui-cm
+        namespace: docker-registry-ns
+      data:
+        single_registry: "true"
+        registry_title: "Docker Registry UI"
+        delete_images: "true"
+        show_content_digest: "true"
+        nginx_proxy_pass_url: "http://docker-registry-srv-clusterip:80"
+        show_catalog_nb_tags: "true"
+        catalog_min_branches: "1"
+        catalog_max_branches: "1"
+        taglist_page_size: "100"
+        registry_secured: "true"
+        catalog_elements_limit: "1000"
+        theme: "dark"
+
+- name: Create the ingress object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: docker-registry-ui-ing
+        namespace: docker-registry-ns
+      spec:
+        rules:
+          - host: "registry-ui.development.com"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: docker-registry-ui-srv-clusterip
+                      port:
+                        number: 80
+
+- name: Create the clusterip service object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: docker-registry-ui-srv-clusterip
+        namespace: docker-registry-ns
+      spec:
+        selector:
+          app: docker-registry-ui
+        type: ClusterIP
+        ports:
+          - protocol: TCP
+            port: 80
+
+- name: Create the deployment object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: docker-registry-ui-dep
+        namespace: docker-registry-ns
+        labels:
+          app: docker-registry-ui
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: docker-registry-ui
+        template:
+          metadata:
+            labels:
+              app: docker-registry-ui
+          spec:
+            containers:
+              - name: docker-registry-ui
+                image: joxit/docker-registry-ui:2.5.2
+                ports:
+                  - containerPort: 80
+                env:
+                  - name: SINGLE_REGISTRY
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: single_registry
+                  - name: REGISTRY_TITLE
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: registry_title
+                  - name: DELETE_IMAGES
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: delete_images
+                  - name: SHOW_CONTENT_DIGEST
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: show_content_digest
+                  - name: NGINX_PROXY_PASS_URL
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: nginx_proxy_pass_url
+                  - name: SHOW_CATALOG_NB_TAGS
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: show_catalog_nb_tags
+                  - name: CATALOG_MIN_BRANCHES
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: catalog_min_branches
+                  - name: CATALOG_MAX_BRANCHES
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: catalog_max_branches
+                  - name: TAGLIST_PAGE_SIZE
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: taglist_page_size
+                  - name: REGISTRY_SECURED
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: registry_secured
+                  - name: CATALOG_ELEMENTS_LIMIT
+                    valueFrom:
+                      configMapKeyRef:
+                        name: docker-registry-ui-cm
+                        key: catalog_elements_limit

@@ -1,0 +1,1 @@
+This installed docker registry ui into the k3s cluster.
