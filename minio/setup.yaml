@@ -1,0 +1,17 @@
+---
+- name: Setup docker-registry-ui
+  hosts: localhost
+  connection: local
+
+  vars_prompt:
+    - name: minio_username
+      prompt: '> Enter the username; for external access to the object storage'
+      private: false
+    - name: minio_password
+      prompt: '> Enter the password; for external access to the object storage'
+      private: true
+
+  tasks:
+    - name: Setup minio 
+      ansible.builtin.include_tasks:
+        file: ./playbooks/minio.yaml

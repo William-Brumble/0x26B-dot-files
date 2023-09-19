@@ -1,0 +1,1 @@
+This installs minio object storage into the k3s cluster.

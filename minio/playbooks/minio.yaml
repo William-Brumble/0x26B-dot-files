@@ -1,0 +1,146 @@
+---
+- name: Create the namespace object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: minio-ns
+        labels:
+          name: minio-ns
+
+- name: Create the persistent volume claim object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: minio-pvc
+        namespace: minio-ns
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
+
+- name: Create the password secret object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      metadata:
+        name: minio-password-sec
+        namespace: minio-ns
+      data:
+        password: "{{ minio_password | b64encode }}"
+
+- name: Create the configmap object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: minio-cm
+        namespace: minio-ns
+      data:
+        username: "{{ minio_username }}"
+
+- name: Create the ingress object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: minio-ing
+        namespace: minio-ns
+      spec:
+        rules:
+          - host: "minio.development.com"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: minio-srv-clusterip
+                      port:
+                        number: 80
+
+- name: Create the clusterip service object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: minio-srv-clusterip
+        namespace: minio-ns
+      spec:
+        selector:
+          app: minio
+        type: ClusterIP
+        ports:
+          - name: console
+            protocol: TCP
+            port: 80
+            targetPort: 9000
+          - name: metrics
+            protocol: TCP
+            port: 9090
+
+- name: Create the deployment object from an inline definition
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: minio-dep
+        namespace: minio-ns
+        labels:
+          app: minio
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: minio
+        template:
+          metadata:
+            labels:
+              app: minio
+          spec:
+            volumes:
+              - name: minio-pvc-storage
+                persistentVolumeClaim:
+                  claimName: minio-pvc
+            containers:
+              - name: minio-container
+                image: quay.io/minio/minio
+                volumeMounts:
+                  - name: minio-pvc-storage
+                    mountPath: /data
+                args:
+                  - server
+                  - /data
+                ports:
+                  - containerPort: 9000
+                  - containerPort: 9090
+                env:
+                  - name: MINIO_ROOT_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: minio-password-sec
+                        key: password
+                  - name: MINIO_ROOT_USER
+                    valueFrom:
+                      configMapKeyRef:
+                        name: minio-cm
+                        key: username
