@@ -22,13 +22,15 @@
     force: true
     path: /tmp/csr.pem
     privatekey_content: "{{ private_key_output.privatekey }}"
+    basic_constraints:
+      - "CA:TRUE"
     subject:
       C: "{{ certificate_country }}"
       ST: "{{ certificate_state }}"
       L: "{{ certificate_city }}"
       O: "{{ certificate_company}}"
       CN: "{{ certificate_common_name}}"
-    subject_alt_name: "DNS:{{ certificate_dns }},DNS:www.{{ certificate_dns }},DNS:registry.{{ certificate_dns }},IP:{{ certificate_ip }}"
+    subject_alt_name: "DNS:{{ certificate_dns }},DNS:www.{{ certificate_dns }},DNS:*.{{ certificate_dns }},IP:{{ certificate_ip }}"
   register: csr_output
 
 - name: Remove the cert csr file

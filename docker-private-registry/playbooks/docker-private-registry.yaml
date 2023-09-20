@@ -162,7 +162,7 @@
             volumes:
               - name: registry-pvc-storage
                 persistentVolumeClaim:
-                  claimName: docker-registry-pvc
+                  claimName: docker-registry-pvc 
               - name: docker-registry-htpasswd-sec
                 secret:
                   secretName: docker-registry-htpasswd-sec

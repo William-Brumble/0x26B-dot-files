@@ -51,6 +51,8 @@
         namespace: minio-ns
       data:
         username: "{{ minio_username }}"
+        minio_address: "0.0.0.0:9000"
+        minio_console_address: "0.0.0.0:9001"
 
 - name: Create the ingress object from an inline definition
   kubernetes.core.k8s:
@@ -73,6 +75,16 @@
                       name: minio-srv-clusterip
                       port:
                         number: 80
+          - host: "minio-api.development.com"
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: minio-srv-clusterip
+                      port:
+                        number: 9000
 
 - name: Create the clusterip service object from an inline definition
   kubernetes.core.k8s:
@@ -91,10 +103,11 @@
           - name: console
             protocol: TCP
             port: 80
-            targetPort: 9000
-          - name: metrics
+            targetPort: 9001
+          - name: s3
             protocol: TCP
-            port: 9090
+            port: 9000
+            targetPort: 9000
 
 - name: Create the deployment object from an inline definition
   kubernetes.core.k8s:
@@ -123,7 +136,7 @@
                   claimName: minio-pvc
             containers:
               - name: minio-container
-                image: quay.io/minio/minio
+                image: registry.development.com/minio:latest
                 volumeMounts:
                   - name: minio-pvc-storage
                     mountPath: /data
@@ -132,7 +145,7 @@
                   - /data
                 ports:
                   - containerPort: 9000
-                  - containerPort: 9090
+                  - containerPort: 9001
                 env:
                   - name: MINIO_ROOT_PASSWORD
                     valueFrom:
@@ -144,3 +157,13 @@
                       configMapKeyRef:
                         name: minio-cm
                         key: username
+                  - name: MINIO_ADDRESS
+                    valueFrom:
+                      configMapKeyRef:
+                        name: minio-cm
+                        key: minio_address
+                  - name: MINIO_CONSOLE_ADDRESS
+                    valueFrom:
+                      configMapKeyRef:
+                        name: minio-cm
+                        key: minio_console_address

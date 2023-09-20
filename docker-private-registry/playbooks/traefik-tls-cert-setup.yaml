@@ -4,6 +4,7 @@
 # This tells Traefik that I want to provide a default self signed certificate
 - name: Create the configmap object from an inline definition
   kubernetes.core.k8s:
+    force: true
     state: present
     definition:
       apiVersion: v1
@@ -27,6 +28,7 @@
 - name: Create the secret object from an inline definition
   kubernetes.core.k8s:
     state: present
+    force: true
     definition:
       apiVersion: v1
       kind: Secret
@@ -47,6 +49,7 @@
 - name: Create the TLSSTore object from an inline definition
   kubernetes.core.k8s:
     state: present
+    force: true
     definition:
       apiVersion: traefik.containo.us/v1alpha1
       kind: TLSStore
